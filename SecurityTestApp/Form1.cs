@@ -27,13 +27,12 @@ namespace SecurityTestApp
 
             if (result != null && result.StartsWith("LOCKED"))
             {
-                // Обработка блокировки
                 string minutes = result.Split('|')[1];
                 MessageBox.Show($"Аккаунт заблокирован! Попробуйте через {minutes} мин.", "Блокировка", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                 return;
             }
 
-            if (result != null) // Успешный вход
+            if (result != null)
             {
                 MessageBox.Show("Успешный вход!");
                 if (result == "Admin")

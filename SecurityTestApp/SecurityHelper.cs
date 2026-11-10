@@ -6,7 +6,6 @@ namespace SecurityTestApp
 {
     public static class SecurityHelper
     {
-        // Генерация случайной соли (16 байт)
         public static string GenerateSalt()
         {
             byte[] saltBytes = new byte[16];
@@ -17,7 +16,6 @@ namespace SecurityTestApp
             return Convert.ToBase64String(saltBytes);
         }
 
-        // Вычисление хеша (Пароль + Соль)
         public static string ComputeHash(string password, string salt)
         {
             using (var sha256 = SHA256.Create())
