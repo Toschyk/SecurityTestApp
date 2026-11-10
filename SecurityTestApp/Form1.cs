@@ -20,6 +20,7 @@ namespace SecurityTestApp
 
         private void btnLogin_Click(object sender, EventArgs e)
         {
+
             string username = txtUsername.Text;
             string password = txtPassword.Text;
 
@@ -45,6 +46,19 @@ namespace SecurityTestApp
             else
             {
                 MessageBox.Show("Неверный логин или пароль!");
+            }
+        }
+
+        private void btnOpenRegister_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                RegisterForm reg = new RegisterForm();
+                reg.Show(); // Show() открывает окно поверх других. ShowDialog() блокирует главное окно.
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка при открытии формы: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

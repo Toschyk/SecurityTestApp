@@ -41,6 +41,7 @@
             this.btnOpenRegister.TabIndex = 6;
             this.btnOpenRegister.Text = "Регистрация";
             this.btnOpenRegister.UseVisualStyleBackColor = true;
+            this.btnOpenRegister.Click += new System.EventHandler(this.btnOpenRegister_Click);
             // 
             // txtPassword
             // 
