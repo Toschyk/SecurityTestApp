@@ -11,8 +11,10 @@ namespace SecurityTestApp
         {
             if (!File.Exists(filePath))
             {
-                // Создаем тестового пользователя
-                File.WriteAllText(filePath, "admin|123456|Admin\n");
+                // Для админа тоже генерируем соль и хеш для пароля "123456"
+                string salt = SecurityHelper.GenerateSalt();
+                string hash = SecurityHelper.ComputeHash("123456", salt);
+                File.WriteAllText(filePath, $"admin|{salt}|{hash}|Admin\n");
             }
         }
 
@@ -23,8 +25,12 @@ namespace SecurityTestApp
             {
                 if (line.Split('|')[0] == username) return false;
             }
-            // УЯЗВИМОСТЬ №1: Пароль сохраняется в открытом виде!
-            File.AppendAllText(filePath, $"{username}|{password}|{role}\n");
+
+            // Генерируем соль и хеш для нового пользователя
+            string salt = SecurityHelper.GenerateSalt();
+            string hash = SecurityHelper.ComputeHash(password, salt);
+
+            File.AppendAllText(filePath, $"{username}|{salt}|{hash}|{role}\n");
             return true;
         }
 
@@ -34,9 +40,19 @@ namespace SecurityTestApp
             foreach (var line in lines)
             {
                 var parts = line.Split('|');
-                if (parts.Length == 3 && parts[0] == username && parts[1] == password)
+                if (parts.Length == 4 && parts[0] == username)
                 {
-                    return parts[2];
+                    string storedSalt = parts[1];
+                    string storedHash = parts[2];
+                    string role = parts[3];
+
+                    // Хешируем введенный пароль с той же солью и сравниваем
+                    string inputHash = SecurityHelper.ComputeHash(password, storedSalt);
+
+                    if (inputHash == storedHash)
+                    {
+                        return role;
+                    }
                 }
             }
             return null;
