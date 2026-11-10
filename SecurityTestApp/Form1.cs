@@ -23,13 +23,20 @@ namespace SecurityTestApp
             string username = txtUsername.Text;
             string password = txtPassword.Text;
 
-            // УЯЗВИМОСТЬ №2: Отсутствует защита от перебора (Брутфорса).
-            string role = FileManager.Authenticate(username, password);
+            string result = FileManager.Authenticate(username, password);
 
-            if (role != null)
+            if (result != null && result.StartsWith("LOCKED"))
+            {
+                // Обработка блокировки
+                string minutes = result.Split('|')[1];
+                MessageBox.Show($"Аккаунт заблокирован! Попробуйте через {minutes} мин.", "Блокировка", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                return;
+            }
+
+            if (result != null) // Успешный вход
             {
                 MessageBox.Show("Успешный вход!");
-                if (role == "Admin")
+                if (result == "Admin")
                 {
                     AdminForm admin = new AdminForm();
                     admin.Show();

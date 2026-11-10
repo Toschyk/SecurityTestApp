@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic; // Не забываем добавить
 using System.IO;
 
 namespace SecurityTestApp
@@ -7,35 +8,30 @@ namespace SecurityTestApp
     {
         private static string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "users.txt");
 
-        public static void InitializeFile()
-        {
-            if (!File.Exists(filePath))
-            {
-                // Для админа тоже генерируем соль и хеш для пароля "123456"
-                string salt = SecurityHelper.GenerateSalt();
-                string hash = SecurityHelper.ComputeHash("123456", salt);
-                File.WriteAllText(filePath, $"admin|{salt}|{hash}|Admin\n");
-            }
-        }
+        // Хранилища для защиты от брутфорса
+        private static Dictionary<string, int> failedAttempts = new Dictionary<string, int>();
+        private static Dictionary<string, DateTime> lockoutEnds = new Dictionary<string, DateTime>();
 
-        public static bool AddUser(string username, string password, string role = "User")
-        {
-            var lines = File.ReadAllLines(filePath);
-            foreach (var line in lines)
-            {
-                if (line.Split('|')[0] == username) return false;
-            }
-
-            // Генерируем соль и хеш для нового пользователя
-            string salt = SecurityHelper.GenerateSalt();
-            string hash = SecurityHelper.ComputeHash(password, salt);
-
-            File.AppendAllText(filePath, $"{username}|{salt}|{hash}|{role}\n");
-            return true;
-        }
+        // ... (методы InitializeFile и AddUser оставляем без изменений) ...
 
         public static string Authenticate(string username, string password)
         {
+            // ПРОВЕРКА БЛОКИРОВКИ
+            if (lockoutEnds.ContainsKey(username))
+            {
+                if (DateTime.Now < lockoutEnds[username])
+                {
+                    TimeSpan remaining = lockoutEnds[username] - DateTime.Now;
+                    return $"LOCKED|{Math.Ceiling(remaining.TotalMinutes)}"; // Возвращаем спец. статус
+                }
+                else
+                {
+                    // Время вышло, снимаем блокировку
+                    lockoutEnds.Remove(username);
+                    failedAttempts[username] = 0;
+                }
+            }
+
             var lines = File.ReadAllLines(filePath);
             foreach (var line in lines)
             {
@@ -46,15 +42,30 @@ namespace SecurityTestApp
                     string storedHash = parts[2];
                     string role = parts[3];
 
-                    // Хешируем введенный пароль с той же солью и сравниваем
                     string inputHash = SecurityHelper.ComputeHash(password, storedSalt);
 
                     if (inputHash == storedHash)
                     {
+                        // Успех! Сбрасываем счетчик ошибок
+                        failedAttempts[username] = 0;
                         return role;
                     }
                 }
             }
+
+            // НЕВЕРНЫЙ ПАРОЛЬ (или пользователь не найден)
+            if (!failedAttempts.ContainsKey(username))
+                failedAttempts[username] = 0;
+
+            failedAttempts[username]++;
+
+            if (failedAttempts[username] >= 3)
+            {
+                // Блокируем на 5 минут
+                lockoutEnds[username] = DateTime.Now.AddMinutes(5);
+                return "LOCKED|5";
+            }
+
             return null;
         }
     }
